@@ -1,133 +1,107 @@
----
-title: EchoSign - ASL Recognition
-emoji: 🤟
-colorFrom: blue
-colorTo: green
-sdk: streamlit
-sdk_version: "1.51.0"
-app_file: app.py
-pinned: false
-license: mit
-python_version: "3.10"
+# EchoSign 🤟: Real-time ASL Translator
+
+> An AI-powered communication bridge that translates American Sign Language (ASL) into text, in real-time, directly in your browser.
+
+[![Streamlit App](https://img.shields.io/badge/LIVE_DEMO-blue?style=for-the-badge&logo=Streamlit)](https://YOUR_STREAMLIT_APP_URL.streamlit.app)
+[![Repo Status](https://img.shields.io/badge/Status-Complete-green?style=for-the-badge)](https://github.com/Aanishnithin07/EchoSign)
+[![License: MIT](https://img.shields.io/badge/License-MIT-darkgreen?style=for-the-badge)](https://opensource.org/licenses/MIT)
+
 ---
 
-# 🤟 EchoSign - Real-time ASL Recognition
+## See It in Action
 
-EchoSign is a real-time American Sign Language (ASL) recognition system that uses computer vision and machine learning to translate hand gestures into letters (A-Z).
+A live, end-to-end demonstration of the application. **This GIF is your most powerful asset.**
 
-## ✨ Features
+![EchoSign Demo GIF](httpsAanishnithin07/EchoSign/main/demo.gif)
+*(**Your Task:** Replace this link with your own `demo.gif` after uploading it to this repo.)*
 
-- 🎥 Real-time webcam-based hand tracking
-- 🤖 97.32% accurate ML model using Random Forest
-- 🌐 Web-based interface with Streamlit
-- 📊 Live confidence scores
-- 🎯 Optimized for performance with MediaPipe Hands
+### **[>>> Try the Live Demo Here <<<](https://YOUR_STREAMLIT_APP_URL.streamlit.app)**
 
-## 🚀 Live Demo
+*(**Your Task:** Replace this with your deployed Streamlit URL.)*
 
-**[Try EchoSign Live on Hugging Face](https://huggingface.co/spaces/YOUR_USERNAME/EchoSign)** _(Update with your HF username after deployment)_
+---
 
-## 🛠️ Technology Stack
+## Core Features
 
-- **Computer Vision**: OpenCV, MediaPipe Hands
-- **Machine Learning**: scikit-learn (Random Forest Classifier)
-- **Web Framework**: Streamlit, streamlit-webrtc
-- **Data Processing**: NumPy, Pandas
+* **Real-time Translation:** Instant classification of hand gestures from a live webcam feed.
+* **High-Accuracy Model:** 97.3% test accuracy using a **`Random Forest Classifier`**.
+* **Robust & Invariant:** The feature engineering makes the model resilient to changes in hand size, position, and rotation.
+* **Web-Based Interface:** Deployed as a public-facing Streamlit app. No install needed.
+* **Lightweight & Fast:** Built on the high-performance **`MediaPipe`** framework for tracking.
 
-## 📦 Installation
+---
 
-1. Clone the repository:
-```bash
-git clone https://github.com/Aanishnithin07/EchoSign.git
-cd EchoSign
-```
+## The Tech Stack
 
-2. Create a virtual environment (Python 3.12):
-```bash
-python3.12 -m venv .venv-py312
-source .venv-py312/bin/activate  # On Windows: .venv-py312\Scripts\activate
-```
+This project isn't just a simple script; it's an integrated system of modern AI and web technologies.
 
-3. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
+| Category | Technology | Purpose |
+| :--- | :--- | :--- |
+| **Machine Learning** | **Scikit-learn** | For training the `RandomForestClassifier` model. |
+| **Computer Vision** | **MediaPipe** (by Google) | For high-fidelity, real-time hand and 21-point landmark detection. |
+| | **OpenCV** | For image processing, text rendering, and video stream handling. |
+| **Web Framework** | **Streamlit** | To build and deploy the interactive web application. |
+| | **Streamlit-WebRTC** | To handle the real-time webcam feed directly in the browser. |
+| **Data Handling** | **NumPy** & **Pandas** | For landmark data manipulation, normalization, and CSV handling. |
+| **Model Storage** | **Git LFS** | To manage the large `asl_model.joblib` file in the repository. |
 
-4. Install Git LFS (if cloning the model):
-```bash
-git lfs install
-git lfs pull
-```
+---
 
-## 🎮 Usage
+## The Engineering: How It Works
 
-Run the Streamlit app locally:
-```bash
-streamlit run app.py
-```
+The "magic" is a four-step pipeline, with the critical step being **Feature Normalization**.
 
-The app will open in your browser at `http://localhost:8501`
+1.  **Capture & Detect:** `Streamlit-WebRTC` grabs the webcam frame. `MediaPipe` scans the frame and detects the 21 3D landmarks of the hand.
 
-## 🎯 How It Works
+2.  **The "Secret Sauce" - Normalization:** The raw coordinates are useless. A hand close to the camera has different coordinates than one far away. The solution is **normalization**.
+    * The wrist (landmark 0) is set as the origin `(0, 0)`.
+    * All other 20 landmarks are recalculated as vectors *relative to the wrist*.
+    * This 42-point vector (`21 * 2 coordinates`) is now **invariant** to position.
 
-1. **Hand Tracking**: MediaPipe detects 21 hand landmarks in real-time
-2. **Feature Extraction**: Landmark coordinates are normalized and flattened
-3. **Prediction**: Random Forest model classifies the hand gesture
-4. **Display**: Predicted letter and confidence score shown on screen
+3.  **Predict:** This normalized vector is fed into the pre-trained `RandomForestClassifier` (`asl_model.joblib`), which instantly returns a prediction (e.g., "A", "B", "L").
 
-## 📊 Model Performance
+4.  **Display:** The predicted letter is rendered back onto the video frame using `OpenCV`, and the frame is displayed to the user.
 
-- **Accuracy**: 97.32%
-- **Training Samples**: 1,864 gestures
-- **Features**: 42 normalized landmark coordinates
-- **Classes**: 26 ASL letters (A-Z)
+---
 
-## 🏗️ Project Structure
+## 🚀 Run It Locally
 
-```
-EchoSign/
-├── app.py                    # Streamlit web application
-├── phase1_hand_tracker.py    # Hand tracking module
-├── phase2_data_collector.py  # Data collection tool
-├── phase3_train_model.py     # Model training script
-├── phase4_realtime_test.py   # Real-time testing
-├── asl_model.joblib          # Trained ML model (Git LFS)
-├── asl_dataset.csv           # Training dataset
-└── requirements.txt          # Python dependencies
-```
+Want to run the full pipeline on your own machine?
 
-## 🔧 Development Phases
+**Prerequisites:** Python 3.10+, Git, and **Git LFS**.
 
-1. **Phase 1**: Hand tracking with MediaPipe
-2. **Phase 2**: Data collection (30 samples per letter)
-3. **Phase 3**: Model training with Random Forest
-4. **Phase 4**: Real-time testing
-5. **Phase 5**: Web deployment with Streamlit
-6. **Phase 6**: Cloud deployment
+1.  **Clone the repo (LFS is required):**
+    ```bash
+    git lfs install
+    git clone [https://github.com/Aanishnithin07/EchoSign.git](https://github.com/Aanishnithin07/EchoSign.git)
+    cd EchoSign
+    git lfs pull
+    ```
+    *(Why LFS? The `asl_model.joblib` file is too large for standard Git.)*
 
-## 🌐 Deployment
+2.  **Set up a virtual environment:**
+    ```bash
+    python -m venv venv
+    source venv/bin/activate  # On Windows: venv\Scripts\activate
+    ```
 
-Deployed on Streamlit Cloud for free public access.
+3.  **Install dependencies:**
+    ```bash
+    pip install -r requirements.txt
+    ```
 
-## 📝 License
+4.  **Run the app:**
+    ```bash
+    streamlit run app.py
+    ```
+    Your browser will open to `http://localhost:8501`.
 
-MIT License - feel free to use this project for learning and development!
-
-## 🤝 Contributing
-
-Contributions are welcome! Feel free to open issues or submit pull requests.
+---
 
 ## 👨‍💻 Author
 
-**Aanish Nithin**
-- GitHub: [@Aanishnithin07](https://github.com/Aanishnithin07)
+* **Aanish Nithin**
+* [GitHub: @Aanishnithin07](https://github.com/Aanishnithin07)
+* [LinkedIn: (Add Your LinkedIn URL)](https://linkedin.com)
 
-## 🙏 Acknowledgments
-
-- MediaPipe by Google for hand tracking
-- Streamlit for the amazing web framework
-- scikit-learn for machine learning tools
-
----
-
-⭐ Star this repo if you found it helpful!
+⭐ **Star this repo if you found it helpful.**
