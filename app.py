@@ -4,7 +4,8 @@ import mediapipe as mp
 import numpy as np
 import joblib
 import av
-from streamlit_webrtc import webrtc_streamer, VideoTransformerBase
+from streamlit_webrtc import webrtc_streamer, VideoTransformerBase, WebRtcMode
+import time
 
 # 1. Load Model and Initialize MediaPipe
 @st.cache_resource
@@ -18,7 +19,14 @@ def load_model():
 @st.cache_resource
 def init_mediapipe():
     mp_hands = mp.solutions.hands
-    hands = mp_hands.Hands(max_num_hands=1, min_detection_confidence=0.7)
+    # Optimize for performance: lower confidence, disable model complexity
+    hands = mp_hands.Hands(
+        static_image_mode=False,
+        max_num_hands=1,
+        min_detection_confidence=0.5,
+        min_tracking_confidence=0.5,
+        model_complexity=0  # Use lightweight model (0 = fastest)
+    )
     mp_drawing = mp.solutions.drawing_utils
     return hands, mp_drawing
 
@@ -49,26 +57,32 @@ class ASLTransformer(VideoTransformerBase):
 
     def recv(self, frame: av.VideoFrame) -> av.VideoFrame:
         # Convert frame to NumPy array
-        image = frame.to_ndarray(format="bgr24")
-        image = cv2.flip(image, 1)
-        h, w, _ = image.shape
+        img = frame.to_ndarray(format="bgr24")
+        img = cv2.flip(img, 1)
+        h, w, _ = img.shape
         
-        # Create overlay for UI elements
-        overlay = image.copy()
-        
-        rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        results = self.hands.process(rgb_image)
+        # Process with MediaPipe directly on original resolution
+        rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        results = self.hands.process(rgb_img)
 
         if results.multi_hand_landmarks:
             self.hand_detected = True
             for hand_landmarks in results.multi_hand_landmarks:
-                # Draw landmarks with cleaner styling
+                # Simple landmark drawing
                 self.mp_drawing.draw_landmarks(
-                    image,
+                    img,
                     hand_landmarks,
-                    mp.solutions.hands.HAND_CONNECTIONS,
-                    self.mp_drawing.DrawingSpec(color=(0, 255, 0), thickness=2, circle_radius=2),
-                    self.mp_drawing.DrawingSpec(color=(255, 255, 255), thickness=2)
+                    mp.solutions.hands.HAND_CONNECTIONS
+                )
+
+        if results.multi_hand_landmarks:
+            self.hand_detected = True
+            for hand_landmarks in results.multi_hand_landmarks:
+                # Simple landmark drawing
+                self.mp_drawing.draw_landmarks(
+                    img,
+                    hand_landmarks,
+                    mp.solutions.hands.HAND_CONNECTIONS
                 )
                 
                 # Normalization
@@ -100,6 +114,19 @@ class ASLTransformer(VideoTransformerBase):
                     self.prediction = predicted_letter
                     self.confidence = confidence
                     
+                    # Draw prediction box with solid background
+                    # Filled rectangle background
+                    cv2.rectangle(img, (10, 10), (160, 160), (0, 0, 0), -1)  # Black filled
+                    # Green border
+                    cv2.rectangle(img, (10, 10), (160, 160), (0, 255, 0), 4)
+                    # Large letter in white for visibility
+                    cv2.putText(img, predicted_letter, (35, 110), 
+                               cv2.FONT_HERSHEY_SIMPLEX, 3.5, (255, 255, 255), 8)
+                    # Confidence below
+                    if confidence:
+                        cv2.putText(img, f"{confidence:.0f}%", (45, 145), 
+                                   cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+                    
                 except Exception as e:
                     print(f"Prediction error: {e}")
                     self.prediction = None
@@ -108,70 +135,14 @@ class ASLTransformer(VideoTransformerBase):
             self.hand_detected = False
             self.prediction = None
             self.confidence = None
-        
-        # Draw UI Elements
-        # Top-left: Large prediction display (if hand detected)
-        if self.hand_detected and self.prediction:
-            box_w, box_h = 200, 200
-            box_x, box_y = 20, 20
             
-            # Semi-transparent dark background
-            cv2.rectangle(overlay, (box_x, box_y), (box_x + box_w, box_y + box_h), (40, 40, 40), -1)
-            cv2.addWeighted(overlay, 0.7, image, 0.3, 0, image)
-            
-            # Green border
-            cv2.rectangle(image, (box_x, box_y), (box_x + box_w, box_y + box_h), (0, 255, 0), 4)
-            
-            # Large letter display
-            cv2.putText(image, self.prediction, (box_x + 35, box_y + 140), 
-                       cv2.FONT_HERSHEY_BOLD, 5, (0, 255, 0), 10)
-            
-            # Confidence percentage (if available)
-            if self.confidence:
-                conf_text = f"{self.confidence:.0f}%"
-                cv2.putText(image, conf_text, (box_x + 50, box_y + 185), 
-                           cv2.FONT_HERSHEY_SIMPLEX, 0.9, (200, 200, 200), 2)
-        
-        # Top-right: Error message when no hand detected
-        else:
-            message_lines = [
-                "No hand detected",
-                "Please show your",
-                "hand gesture clearly"
-            ]
-            
-            box_w, box_h = 300, 130
-            box_x, box_y = w - box_w - 20, 20
-            
-            # Semi-transparent red background
-            cv2.rectangle(overlay, (box_x, box_y), (box_x + box_w, box_y + box_h), (0, 0, 180), -1)
-            cv2.addWeighted(overlay, 0.6, image, 0.4, 0, image)
-            
-            # Red border
-            cv2.rectangle(image, (box_x, box_y), (box_x + box_w, box_y + box_h), (0, 0, 255), 3)
-            
-            # Warning emoji/icon
-            cv2.putText(image, "!", (box_x + 15, box_y + 50), 
-                       cv2.FONT_HERSHEY_BOLD, 2, (255, 255, 255), 4)
-            
-            # Message text
-            for i, line in enumerate(message_lines):
-                cv2.putText(image, line, (box_x + 60, box_y + 35 + i * 32), 
-                           cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
-        
-        # Bottom: Tips bar
-        tips_h = 70
-        cv2.rectangle(overlay, (0, h - tips_h), (w, h), (30, 30, 30), -1)
-        cv2.addWeighted(overlay, 0.75, image, 0.25, 0, image)
-        
-        # Tips text
-        tips = [
-            "TIPS: Keep hand centered | Good lighting helps | Try different angles",
-        ]
-        cv2.putText(image, tips[0], (20, h - 25), 
-                   cv2.FONT_HERSHEY_SIMPLEX, 0.65, (220, 220, 220), 2)
+            # "No hand" message with background
+            cv2.rectangle(img, (w - 310, 15), (w - 10, 65), (0, 0, 0), -1)  # Black background
+            cv2.rectangle(img, (w - 310, 15), (w - 10, 65), (0, 0, 255), 3)  # Red border
+            cv2.putText(img, "Show hand gesture", (w - 295, 45), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 255, 255), 2)
 
-        return av.VideoFrame.from_ndarray(image, format="bgr24")
+        return av.VideoFrame.from_ndarray(img, format="bgr24")
 
 # 3. Run the Streamlit Web App
 if model is None:
@@ -181,20 +152,37 @@ else:
     
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        webrtc_streamer(
+        webrtc_ctx = webrtc_streamer(
             key="asl-translator",
+            mode=WebRtcMode.SENDRECV,
             video_transformer_factory=ASLTransformer,
-            media_stream_constraints={"video": True, "audio": False},
-            async_transform=True
+            media_stream_constraints={
+                "video": {
+                    "width": 640,
+                    "height": 480,
+                    "frameRate": 30
+                },
+                "audio": False
+            },
+            async_transform=False,  # Changed to sync for better stability
+            rtc_configuration={
+                "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
+            }
         )
     
     st.divider()
+    
+    # Performance tips
+    st.info("💡 **Performance Tip**: If the video is laggy, try refreshing the page or restarting the webcam stream by clicking STOP then START again.")
     
     # Additional info
     with st.expander("ℹ️ Troubleshooting Tips"):
         st.markdown("""
         **If you're having issues:**
-        - Make sure your browser has camera permissions enabled
+        - **Frozen/Laggy video**: Click STOP, wait 2 seconds, then click START again
+        - Make sure your browser has camera permissions enabled (check browser settings)
+        - Close other applications using the webcam
+        - Try a different browser (Chrome or Edge work best)
         - Ensure your hand is well-lit and clearly visible
         - Keep your hand centered in the frame
         - Try holding the gesture steady for 1-2 seconds
@@ -204,6 +192,7 @@ else:
         - Use a plain background for better hand detection
         - Keep the camera at arm's length
         - Make sure all fingers are visible (not cut off by frame edges)
+        - Good lighting is essential for accurate detection
         """)
     
     st.markdown("---")
