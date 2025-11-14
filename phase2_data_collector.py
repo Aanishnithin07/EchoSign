@@ -27,7 +27,7 @@ if not os.path.exists(DATASET_FILE) or os.path.getsize(DATASET_FILE) == 0:
         writer = csv.writer(f)
         writer.writerow(header)
 
-print("Starting Data Collector... Press A-Z to save data. Press 'q' to quit.")
+print("Starting Data Collector... Press A-Z to save data. Press ESC to quit.")
 
 # Main loop
 while cap.isOpened():
@@ -85,7 +85,8 @@ while cap.isOpened():
     # Key logic
     key = cv2.waitKey(5) & 0xFF
     
-    if key == ord('q'):
+    # ESC key to quit (key code 27)
+    if key == 27:
         break
     
     # Check if the key is a letter (a-z)
