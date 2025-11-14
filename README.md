@@ -1,3 +1,16 @@
+---
+title: EchoSign - ASL Recognition
+emoji: 🤟
+colorFrom: blue
+colorTo: green
+sdk: streamlit
+sdk_version: "1.51.0"
+app_file: app.py
+pinned: false
+license: mit
+python_version: "3.10"
+---
+
 # 🤟 EchoSign - Real-time ASL Recognition
 
 EchoSign is a real-time American Sign Language (ASL) recognition system that uses computer vision and machine learning to translate hand gestures into letters (A-Z).
@@ -12,7 +25,7 @@ EchoSign is a real-time American Sign Language (ASL) recognition system that use
 
 ## 🚀 Live Demo
 
-**[Try EchoSign Live](https://your-app-url.streamlit.app)** _(Update this after deployment)_
+**[Try EchoSign Live on Hugging Face](https://huggingface.co/spaces/YOUR_USERNAME/EchoSign)** _(Update with your HF username after deployment)_
 
 ## 🛠️ Technology Stack
 
