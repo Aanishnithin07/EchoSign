@@ -8,16 +8,7 @@
 
 ---
 
-## See It in Action
 
-A live, end-to-end demonstration of the application. **This GIF is your most powerful asset.**
-
-![EchoSign Demo GIF](httpsAanishnithin07/EchoSign/main/demo.gif)
-*(**Your Task:** Replace this link with your own `demo.gif` after uploading it to this repo.)*
-
-### **[>>> Try the Live Demo Here <<<](https://YOUR_STREAMLIT_APP_URL.streamlit.app)**
-
-*(**Your Task:** Replace this with your deployed Streamlit URL.)*
 
 ---
 
@@ -100,8 +91,6 @@ Want to run the full pipeline on your own machine?
 
 ## 👨‍💻 Author
 
-* **Aanish Nithin**
+* **Aanish Nithin A**
 * [GitHub: @Aanishnithin07](https://github.com/Aanishnithin07)
-* [LinkedIn: (Add Your LinkedIn URL)](https://linkedin.com)
-
 ⭐ **Star this repo if you found it helpful.**
